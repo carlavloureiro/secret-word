@@ -30,7 +30,7 @@ function App() {
   const [guesses, setGuesses] = useState(guessesQty);
   const [score, setScore] = useState(0);
 
-  const pickWordAndCategory = () => {
+  const pickWordAndCategory = useCallback(() => {
     //Escolhe uma categoria aleatória
     const categories = Object.keys(words);
     const category = categories[Math.floor(Math.random() * Object.keys(categories.length))];
@@ -39,26 +39,25 @@ function App() {
     const word = words[category][Math.floor(Math.random() * words[category].length)];
 
     return{ word, category };
-  }
+  }, [words]);
 
   //Começa o jogo
-  const startGame = () => {
+  const startGame = useCallback(() => {
+    clearLetterStates();
+
     const { word, category } = pickWordAndCategory();
 
     //Cria um array de letras, conforme a palavra escolhida
     let wordLetters = word.split("");
 
     wordLetters = wordLetters.map((l) => l.toLowerCase());
-
-    console.log(word, category);
-    console.log(wordLetters);
-
+    
     setPickedWord(word);
     setPickedCategory(category);
     setLetters(wordLetters);
 
     setGameStage(stages[1].name);
-  };
+  }, [pickWordAndCategory]);
 
   //Processa a letra no input
   const verifyLetter = (letter) => {
@@ -89,6 +88,23 @@ function App() {
     setWrongLetters([]);
   }
 
+  //Checa a condição de vitória
+  useEffect(() => {
+    const uniqueLetters = [... new Set(letters)];
+
+    if (guessedLetters.length === uniqueLetters.length) {
+      //Atribui pontuação
+      setScore((actualScore) => actualScore += 100);
+
+      //Recomeça o jogo com uma nova palavra
+      startGame();
+    }
+
+    console.log(uniqueLetters);
+  }, [guessedLetters])
+
+
+  //Checa se as tentativas se esgotaram
   useEffect(() => {
     if (guesses <= 0) {
       //Reseta todos os states
@@ -123,7 +139,7 @@ function App() {
               score={score}
             />
         )}
-        {gameStage === "end" && <GameOver retry={retry}/>}
+        {gameStage === "end" && <GameOver retry={retry} score={score}/>}
       </div>
     </>
   )
